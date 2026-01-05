@@ -8,17 +8,18 @@ export default function Home() {
       <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
         <Image
           className="dark:invert"
-          src="/next.svg"
+          src="/images/anh-dep-68.jpg"
           alt="Next.js logo"
-          width={100}
-          height={20}
+          width={500}
+          height={100}
           priority
+          quality={75}
         />
         <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
           <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
             To get started, edit the page.tsx file.
           </h1>
-          <Button className="btn-primary" size="lg">dsdssd</Button>
+          <Button className="btn-primary font-bold" size="lg">HOMEEE</Button>
           
         </div>
         <Card />
