@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import React from "react";
+import React, { use } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,10 @@ import { Input } from "@/components/ui/input";
 import { LoginBody, LoginBodyType } from "@/schemaValidations/auth.schema";
 import envConfig from "@/config";
 import { toast } from "sonner";
+import { useAppContext } from "@/app/AppProvider";
 
 export default function LoginForm() {
+  const {setSessionToken} = useAppContext();
   // 1. Define your form.
   const form = useForm<LoginBodyType>({
     resolver: zodResolver(LoginBody),
@@ -48,6 +50,23 @@ export default function LoginForm() {
         return data;
       });
       toast.success("Đăng nhập thành công");
+
+      const resultFromNextServer = await fetch("/api/auth", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(response),
+      }).then(async (res) => {
+        const payload = await res.json();
+        const data = { payload, status: res.status };
+        if (!res.ok) {
+          throw data;
+        }
+        return data;
+      });
+      setSessionToken(resultFromNextServer.payload.data.token);
+
     } catch (error: any) {
       const errors = error.payload.errors as {
         field: string;
