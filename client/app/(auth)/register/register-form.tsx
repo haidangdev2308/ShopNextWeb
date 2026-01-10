@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,8 +19,14 @@ import {
   RegisterBodyType,
 } from "@/schemaValidations/auth.schema";
 import envConfig from "@/config";
+import authApiRequests from "@/apiRequests/auth";
+import { toast } from "sonner";
+import { useAppContext } from "@/app/AppProvider";
+import { useRouter } from "next/navigation";
 
 export default function RegisterForm() {
+  const {setSessionToken} = useAppContext();
+    const router = useRouter()
   // 1. Define your form.
   const form = useForm<RegisterBodyType>({
     resolver: zodResolver(RegisterBody),
@@ -33,14 +40,30 @@ export default function RegisterForm() {
 
   // 2. Define a submit handler.
   async function onSubmit(values: RegisterBodyType) {
-    const response = await fetch(`${envConfig.NEXT_PUBLIC_API_ENDPOINT}/auth/register`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(values),
-    })
-    const data = await response.json();
+    try {
+      const response = await authApiRequests.register(values);
+      toast.success("Đăng nhập thành công");
+
+      await authApiRequests.auth({sessionToken: response.payload.data.token});
+      setSessionToken(response.payload.data.token);
+      router.push("/me");
+    } catch (error: any) {
+      const errors = error.payload.errors as {
+        field: string;
+        message: string;
+      };
+      const status = error.status as number;
+      if (status === 422 && Array.isArray(errors)) {
+        errors.forEach((err) => {
+          form.setError(err.field as keyof RegisterBodyType, {
+            type: "server",
+            message: err.message,
+          });
+        });
+      } else {
+        toast.error(error.message || "Đã có lỗi xảy ra, vui lòng thử lại sau");
+      }
+    }
   }
 
   return (
@@ -89,7 +112,7 @@ export default function RegisterForm() {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input placeholder="password" {...field} />
+                <Input type="password" placeholder="password" {...field} />
               </FormControl>
               {/* <FormDescription>
                 This is your public display name.
@@ -105,7 +128,7 @@ export default function RegisterForm() {
             <FormItem>
               <FormLabel>Confirm Password</FormLabel>
               <FormControl>
-                <Input placeholder="confirm password" {...field} />
+                <Input type="password" placeholder="confirm password" {...field} />
               </FormControl>
               {/* <FormDescription>
                 This is your public display name.

@@ -17,9 +17,12 @@ import { LoginBody, LoginBodyType } from "@/schemaValidations/auth.schema";
 import envConfig from "@/config";
 import { toast } from "sonner";
 import { useAppContext } from "@/app/AppProvider";
+import authApiRequests from "@/apiRequests/auth";
+import { useRouter } from "next/navigation";
 
 export default function LoginForm() {
   const {setSessionToken} = useAppContext();
+  const router = useRouter()
   // 1. Define your form.
   const form = useForm<LoginBodyType>({
     resolver: zodResolver(LoginBody),
@@ -32,41 +35,12 @@ export default function LoginForm() {
   // 2. Define a submit handler.
   async function onSubmit(values: LoginBodyType) {
     try {
-      const response = await fetch(
-        `${envConfig.NEXT_PUBLIC_API_ENDPOINT}/auth/login`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(values),
-        }
-      ).then(async (res) => {
-        const payload = await res.json();
-        const data = { payload, status: res.status };
-        if (!res.ok) {
-          throw data;
-        }
-        return data;
-      });
+      const response = await authApiRequests.login(values);
       toast.success("Đăng nhập thành công");
 
-      const resultFromNextServer = await fetch("/api/auth", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(response),
-      }).then(async (res) => {
-        const payload = await res.json();
-        const data = { payload, status: res.status };
-        if (!res.ok) {
-          throw data;
-        }
-        return data;
-      });
-      setSessionToken(resultFromNextServer.payload.data.token);
-
+      await authApiRequests.auth({sessionToken: response.payload.data.token});
+      setSessionToken(response.payload.data.token);
+      router.push("/me");
     } catch (error: any) {
       const errors = error.payload.errors as {
         field: string;
@@ -116,7 +90,7 @@ export default function LoginForm() {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input placeholder="password" {...field} />
+                <Input type="password" placeholder="password" {...field} />
               </FormControl>
               {/* <FormDescription>
                 This is your public display name.
