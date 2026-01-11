@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import React, { use } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -14,15 +13,12 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { LoginBody, LoginBodyType } from "@/schemaValidations/auth.schema";
-import envConfig from "@/config";
 import { toast } from "sonner";
-import { useAppContext } from "@/app/AppProvider";
 import authApiRequests from "@/apiRequests/auth";
 import { useRouter } from "next/navigation";
 
 export default function LoginForm() {
-  const {setSessionToken} = useAppContext();
-  const router = useRouter()
+  const router = useRouter();
   // 1. Define your form.
   const form = useForm<LoginBodyType>({
     resolver: zodResolver(LoginBody),
@@ -38,8 +34,7 @@ export default function LoginForm() {
       const response = await authApiRequests.login(values);
       toast.success("Đăng nhập thành công");
 
-      await authApiRequests.auth({sessionToken: response.payload.data.token});
-      setSessionToken(response.payload.data.token);
+      await authApiRequests.auth({ sessionToken: response.payload.data.token });
       router.push("/me");
     } catch (error: any) {
       const errors = error.payload.errors as {

@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -18,15 +17,12 @@ import {
   RegisterBody,
   RegisterBodyType,
 } from "@/schemaValidations/auth.schema";
-import envConfig from "@/config";
 import authApiRequests from "@/apiRequests/auth";
 import { toast } from "sonner";
-import { useAppContext } from "@/app/AppProvider";
 import { useRouter } from "next/navigation";
 
 export default function RegisterForm() {
-  const {setSessionToken} = useAppContext();
-    const router = useRouter()
+  const router = useRouter();
   // 1. Define your form.
   const form = useForm<RegisterBodyType>({
     resolver: zodResolver(RegisterBody),
@@ -44,8 +40,7 @@ export default function RegisterForm() {
       const response = await authApiRequests.register(values);
       toast.success("Đăng nhập thành công");
 
-      await authApiRequests.auth({sessionToken: response.payload.data.token});
-      setSessionToken(response.payload.data.token);
+      await authApiRequests.auth({ sessionToken: response.payload.data.token });
       router.push("/me");
     } catch (error: any) {
       const errors = error.payload.errors as {
@@ -128,7 +123,11 @@ export default function RegisterForm() {
             <FormItem>
               <FormLabel>Confirm Password</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="confirm password" {...field} />
+                <Input
+                  type="password"
+                  placeholder="confirm password"
+                  {...field}
+                />
               </FormControl>
               {/* <FormDescription>
                 This is your public display name.

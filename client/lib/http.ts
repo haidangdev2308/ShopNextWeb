@@ -24,6 +24,7 @@ const request = async <Response>(
   const body = options?.body ? JSON.stringify(options.body) : undefined;
   const baseHeaders = {
     "Content-Type": "application/json",
+    Authorization: clientSessionToken.value ? `Bearer ${clientSessionToken.value}` : "",
   };
   //base url rỗng là gọi API đến next server
   const baseUrl =
@@ -49,6 +50,12 @@ const request = async <Response>(
   if (!res.ok) {
     throw new HttpError(res.status, payload);
   }
+  //tự động cập nhật clientSessionToken khi đăng nhập, đăng ký, đăng xuất
+  if(['/auth/login','/auth/register'].includes(url)){
+    clientSessionToken.value = (payload as any).data.token;
+  } else if(['/auth/logout'].includes(url)){
+    clientSessionToken.value = '';
+  }
   return data;
 };
 
@@ -66,7 +73,7 @@ class SessionToken {
   }
 }
 
-const sessionToken = new SessionToken(); // obj chỉ thực hiện lưu trữ token trong client side
+export const clientSessionToken = new SessionToken(); // obj chỉ thực hiện lưu trữ token trong client side
 
 const http = {
   get<Response>(
