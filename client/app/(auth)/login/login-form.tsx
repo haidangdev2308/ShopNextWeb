@@ -16,8 +16,13 @@ import { LoginBody, LoginBodyType } from "@/schemaValidations/auth.schema";
 import { toast } from "sonner";
 import authApiRequests from "@/apiRequests/auth";
 import { useRouter } from "next/navigation";
+import { handleErrorApi } from "@/lib/utils";
+import { useState } from "react";
+import { useAppContext } from "@/app/app-provider";
 
 export default function LoginForm() {
+  const [loading, setLoading] = useState(false);
+  const { setUser } = useAppContext();
   const router = useRouter();
   // 1. Define your form.
   const form = useForm<LoginBodyType>({
@@ -30,28 +35,26 @@ export default function LoginForm() {
 
   // 2. Define a submit handler.
   async function onSubmit(values: LoginBodyType) {
+    if (loading) return
+    setLoading(true)
     try {
       const response = await authApiRequests.login(values);
       toast.success("Đăng nhập thành công");
 
-      await authApiRequests.auth({ sessionToken: response.payload.data.token });
-      router.push("/me");
+      await authApiRequests.auth({
+        sessionToken: response.payload.data.token,
+        expiresAt: response.payload.data.expiresAt,
+      });
+      setUser(response.payload.data.account);
+      router.push("/");
+      router.refresh();
     } catch (error: any) {
-      const errors = error.payload.errors as {
-        field: string;
-        message: string;
-      };
-      const status = error.status as number;
-      if (status === 422 && Array.isArray(errors)) {
-        errors.forEach((err) => {
-          form.setError(err.field as keyof LoginBodyType, {
-            type: "server",
-            message: err.message,
-          });
-        });
-      } else {
-        toast.error(error.message || "Đã có lỗi xảy ra, vui lòng thử lại sau");
-      }
+      handleErrorApi({
+        error,
+        setError: form.setError,
+      });
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -69,7 +72,7 @@ export default function LoginForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="email" {...field} />
+                <Input placeholder="email" type="email" {...field} />
               </FormControl>
               {/* <FormDescription>
                 This is your public display name.

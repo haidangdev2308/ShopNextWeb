@@ -20,8 +20,13 @@ import {
 import authApiRequests from "@/apiRequests/auth";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { handleErrorApi } from "@/lib/utils";
+import { useState } from "react";
+import { useAppContext } from "@/app/app-provider";
 
 export default function RegisterForm() {
+  const [loading, setLoading] = useState(false);
+  const { setUser } = useAppContext();
   const router = useRouter();
   // 1. Define your form.
   const form = useForm<RegisterBodyType>({
@@ -36,28 +41,25 @@ export default function RegisterForm() {
 
   // 2. Define a submit handler.
   async function onSubmit(values: RegisterBodyType) {
+    if (loading) return;
+    setLoading(true);
     try {
       const response = await authApiRequests.register(values);
-      toast.success("Đăng nhập thành công");
 
-      await authApiRequests.auth({ sessionToken: response.payload.data.token });
+      await authApiRequests.auth({
+        sessionToken: response.payload.data.token,
+        expiresAt: response.payload.data.expiresAt,
+      });
+      toast.success(response.payload.message || "Đăng ký thành công");
+      setUser(response.payload.data.account);
       router.push("/me");
     } catch (error: any) {
-      const errors = error.payload.errors as {
-        field: string;
-        message: string;
-      };
-      const status = error.status as number;
-      if (status === 422 && Array.isArray(errors)) {
-        errors.forEach((err) => {
-          form.setError(err.field as keyof RegisterBodyType, {
-            type: "server",
-            message: err.message,
-          });
-        });
-      } else {
-        toast.error(error.message || "Đã có lỗi xảy ra, vui lòng thử lại sau");
-      }
+      handleErrorApi({
+        error,
+        setError: form.setError,
+      });
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -91,7 +93,7 @@ export default function RegisterForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="email" {...field} />
+                <Input placeholder="email" type="email" {...field} />
               </FormControl>
               {/* <FormDescription>
                 This is your public display name.
